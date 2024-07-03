@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <NetCommon.h>
+#include <NetMessage.h>
 #include <TSQueue.h>
 
 TEST(SomeTest, BasicAssertions)
@@ -105,10 +105,32 @@ namespace yoyo
                 Max,
             };
 
-            MessageHeader<CustomMessageEnum> msg_header;
-            msg_header.id = CustomMessageEnum::Ping;
+            TSQueue<Message<CustomMessageEnum>> msgs;
 
-            TSQueue<CustomMessageEnum> msg_queue;
+            static const char message_string[] = "Pass the message";
+            static const size_t message_size = sizeof(message_string);
+
+            for(size_t i = 0; i < message_size; i++)
+            {
+                MessageHeader<CustomMessageEnum> msg_header;
+                msg_header.id = CustomMessageEnum::Ping;
+
+                Message<CustomMessageEnum> msg;
+                msg.header = msg_header;
+                msg << message_string[i];
+
+                msgs.PushFront(msg);
+            }
+            EXPECT_EQ(static_cast<size_t>(message_size), msgs.Size());
+
+            char out_message[message_size] = {0};
+            for(size_t i = 0; i < message_size; i++)
+            {
+                Message<CustomMessageEnum> msg = msgs.PopBack(msg);
+                msg >> out_message[i];
+            }
+            EXPECT_EQ(msgs.Size(), 0);
+            EXPECT_TRUE(strcmp(out_message, message_string) == 0);
         }
     }
 }
